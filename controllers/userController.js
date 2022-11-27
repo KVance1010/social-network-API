@@ -1,22 +1,104 @@
-// `/api/users`
+const { ObjectId } = require('mongoose').Types;
+const { User, Thought } = require('../models');
 
-//  `GET` all users
+const userFriends = async (userId) =>
+  User.aggregate([
+    // only include the given student by using $match
+    { $match: { _id: ObjectId(userId) } },
+    {
+      $unwind: '$friends',
+    },
+    {
+      $group: {
+        _id: ObjectId(userId),
+        userName: $userName
+      },
+    },
+  ]);
 
-// `GET` a single user by its `_id` and populated thought and friend data
+module.exports = {
+	// `GET` all users
+	getUsers(req, res) {
+		User.find()
+			.then((users) => res.json(users))
+			.catch((err) => res.status(500).json(err));
+	},
+	// `GET` a single user by its `_id` and populated thought and friend data
+	getSingleUser(req, res) {
+		User.findOne({ _id: req.params.userId })
+			.select('-__v')
+			.then(async (user) =>
+				!user
+					? res.status(404).json({ message: 'No user with that ID' })
+					: res.json({
+						user,
+						friends: await userFriends(req.params.userId)
+					})
+			)
+			.catch((err) => res.status(500).json(err));
+	},
+	// `POST` a new user:
+	createUser(req, res) {
+		User.create(req.body)
+			.then((user) => res.json(user))
+			.catch((err) => res.status(500).json(err));
+	},
+	// `DELETE` to remove user by its `_id`
+	deleteUser(req, res) {
+		User.findOneAndRemove({ _id: req.params.userId })
+		.then((user) =>
+		  !user
+			? res.status(404).json({ message: 'User not found' })
+			: User.findOneAndUpdate(
+				{ friends: req.params.userId },
+				{ $pull: { friends: req.params.userId } },
+				{ new: true }
+			  )
+		).then((user) =>
+		!user
+		  ? res.status(404).json({ message: 'User not found' })
+		  : Thought.findOneAndUpdate(
+			  { thoughts: req.params.userId },
+			  { $pull: { thoughts: req.params.userId } },
+			  { new: true }
+			)
+		).catch((err) => {
+		  console.log(err);
+		  res.status(500).json(err);
+		});
+	},
+	//  `PUT` to update a user by its `_id` TODO:
+	updateUser(req, res) {},
 
-// `POST` a new user:
-
-//  `PUT` to update a user by its `_id`
-
-// `DELETE` to remove user by its `_id`
-
-// Remove a user's associated thoughts when deleted.
-
-
-
-
-// `/api/users/:userId/friends/:friendId`
-
-// * `POST` to add a new friend to a user's friend list
-
-// * `DELETE` to remove a friend from a user's friend list
+	// `POST` to add a new friend to a user's friend list
+	addFriend(req, res) {
+		User.findOneAndUpdate(
+			{ _id: req.params.userId },
+			{ $addToSet: { friends: req.body } },
+			{ runValidators: true, new: true }
+		  )
+			.then((user) =>
+			  !user
+				? res
+					.status(404)
+					.json({ message: 'No user found :(' })
+				: res.json(user)
+			)
+			.catch((err) => res.status(500).json(err));
+	},
+	//  `DELETE` to remove a friend from a user's friend list
+	deleteFriend(req, res){
+		User.findOneAndUpdate(
+		  { _id: req.params.userId },
+		  { $pull: { friends: { userId: req.params.friendId } } },
+		)
+		  .then((user) =>
+			!user
+			  ? res
+				  .status(404)
+				  .json({ message: 'No user found :(' })
+			  : res.json(user)
+		  )
+		  .catch((err) => res.status(500).json(err));
+	  }
+};

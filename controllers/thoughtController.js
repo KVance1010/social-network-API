@@ -1,3 +1,10 @@
+// getThoughts,
+// getSingleThought,
+// createThought,
+// updateThought,
+// deleteThought,
+// updateReaction,
+// deleteReaction;
 
 // **`/api/thoughts`**
 
@@ -10,8 +17,6 @@
 // * `PUT` to update a thought by its `_id`
 
 // * `DELETE` to remove a thought by its `_id`
-
-
 
 // **`/api/thoughts/:thoughtId/reactions`**
 

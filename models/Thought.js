@@ -28,7 +28,6 @@ const reactionSchema = new Schema(
 	}
 );
 
-
 const thoughtSchema = new Schema(
   {
     thoughtId: {
