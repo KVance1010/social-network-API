@@ -4,6 +4,7 @@
 
 ## Description
 
+This application is a simple backend api that is used for a social media Api. The application uses MongoDb, Mongoose, Express, and Node.js. MongoDB is stores large amounts of information quickly.  
 
 ---
 
@@ -25,13 +26,43 @@
 
 ## Installation
 
-
+Run "nmp i" in the command line of the application to download the required node modules. Once all required modules have been downloaded you can type "nmp start" to run the application. 
 
 ---
 
 ## Usage
 
+When the application is running open the browser window or any platform to test API   endpoints. This application has API end points for the Users,Thoughts, Friends, and Reactions. The API end points are:
 
+#### Thought Routes
+| Request Method | Route | Use |
+|---|---|---|
+|post | /api/thoughts/:thoughtId| Create a thought|
+|put | /api/thoughts/:thoughtId| Update a thought|
+|delete | /api/thoughts/:thoughtId| Delete a thought|
+|get | /api/thoughts/ | Get all thoughts|
+|get | /api/thoughts/:thoughtId| get a thought|
+
+#### User Routes
+| Request Method | Route | Use |
+|---|---|---|
+|post | /api/users/:userId| Create a user|
+|put | /api/users/:userId| Update a user|
+|delete | /api/users/:userId| Delete a user|
+|get | /api/users/ | Get all users|
+|get | /api/users/:userId| get a user|
+
+#### Friends Routes
+| Request Method | Route | Use |
+|---|---|---|
+|post | /:userId/friends/:friendId| Create a friend|
+|delete | /:userId/friends/:friendId| delete a friend|
+
+#### Reactions Routes
+| Request Method | Route | Use |
+|---|---|---|
+|post | /:thoughtId/reactions| Create a reaction|
+|delete | /:thoughtId/reactions/:reactionId| delete a reaction|
 
 ---
 
@@ -134,7 +165,7 @@ Kyle Vance
 
 If you have any questions regarding this project, please reach me by email at vanceofalifetime@protonmail.com
 
-[Video Link]()
+[Video Link](https://drive.google.com/file/d/1U3HoMpX0S7GQEx3a559vI17uelH7-sDw/view)
 
 [LinkedIn](https://www.linkedin.com/in/kyle-s-vance/)
 

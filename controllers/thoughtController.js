@@ -24,15 +24,16 @@ module.exports = {
 	// `POST` to create a new thought (don't forget to push the created thought's `_id` to the associated user's `thoughts` array field)
 	createThought(req, res) {
 		Thought.create(req.body)
+		// .select('-__v')
 		.then((thought) => {
-			 User.findOneAndUpdate(
+			return User.findOneAndUpdate(
 				{ _id: req.body.userId },
-				{ $addToSet: { thoughts: thought._id } },
+				{ $push: { thoughts: thought._id } },
 				{ new: true }
 			 )
 			 }).then((user) => {
 				!user
-				? res.status(404).json({ message: 'No thought found' })
+				? res.status(404).json({ message: 'No user found' })
 				: res.json(user);
 		})
 		.catch((err) => res.status(500).json(err));
@@ -45,6 +46,7 @@ module.exports = {
 			{ $set: req.body },
 			{ runValidators: true, new: true }
 		  )
+		  .select('-__v')
 			.then((thought) =>
 			  !thought
 				? res.status(404).json({ message: 'No thought found' })
@@ -55,16 +57,19 @@ module.exports = {
 
 	// `DELETE` to remove a thought by its `_id`
 	deleteThought(req, res) {
-		Thought.findOneAndRemove({ _id: req.params.thoughtId })
-		.then((thought) =>
-		  !thought
-			? res.status(404).json({ message: 'No Thought found' })
-			: User.findOneAndUpdate(
-				{ reactions: req.params.thoughtId },
-				{ $pull: { reactions: req.params.thoughtId } },
+		Thought.findOneAndDelete({ _id: req.params.thoughtId })
+		.then((thought) => {
+		  if(!thought){res.status(404).json({ message: 'No Thought found' })}
+			return User.findOneAndUpdate(
+				{ thoughts: req.params.thoughtId },
+				{ $pull: { thoughts: req.params.thoughtId } },
 				{ new: true }
 			  )
-		).catch((err) => {
+			}).then((user) => {
+				!user
+				? res.status(404).json({ message: 'No user found' })
+				: res.json(user);
+		}).catch((err) => {
 		  console.log(err);
 		  res.status(500).json(err);
 		});
@@ -74,7 +79,7 @@ module.exports = {
 	createReaction(req, res) {
 		Thought.findOneAndUpdate(
 			{ _id: req.params.thoughtId },
-			{ $addToSet: { reactions: req.body } },
+			{ $push: { reactions: req.body } },
 			{ runValidators: true, new: true }
 		  )
 			.then((thought) =>

@@ -1,19 +1,19 @@
 const { ObjectId } = require('mongoose').Types;
 const { User, Thought } = require('../models');
 
-// const userFriends = async (userId) =>
-// 	User.aggregate([
-// 		{ $match: { _id: ObjectId(userId) } },
-// 		{
-// 			$unwind: '$friends',
-// 		},
-// 		{
-// 			$group: {
-// 				_id: ObjectId(userId),
-// 				userName: $userName,
-// 			},
-// 		},
-// 	]);
+const userFriends = async (userId) =>
+	User.aggregate([
+		{ $match: { _id: ObjectId(userId) } },
+		{
+			$unwind: '$friends',
+		},
+		{
+			$group: {
+				_id: ObjectId(userId),
+				userName: $userName,
+			},
+		},
+	]);
 
 module.exports = {
 	// `GET` all users
@@ -49,7 +49,7 @@ module.exports = {
 				if (user.thoughts.length > 0) {
 					Thought.deleteMany({ _id: { $in: user.thoughts } });
 				}
-				return res.status(200).json({});
+				return res.status(200).json({message: 'user deleted successfully'});
 			})
 			.catch((err) => {
 				console.log(err);
@@ -75,7 +75,7 @@ module.exports = {
 	addFriend(req, res) {
 		User.findOneAndUpdate(
 			{ _id: req.params.userId },
-			{ $addToSet: { friends: req.body } },
+			{ $push: { friends: req.params.friendId } },
 			{ runValidators: true, new: true }
 		)
 			.then((user) =>
@@ -89,7 +89,8 @@ module.exports = {
 	deleteFriend(req, res) {
 		User.findOneAndUpdate(
 			{ _id: req.params.userId },
-			{ $pull: { friends: { userId: req.params.friendId } } }
+			{ $pull: { friends: req.params.friendId  } },
+			{ new: true }
 		)
 			.then((user) =>
 				!user
