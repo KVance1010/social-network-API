@@ -1,20 +1,19 @@
 const { ObjectId } = require('mongoose').Types;
 const { User, Thought } = require('../models');
 
-const userFriends = async (userId) =>
-  User.aggregate([
-    // only include the given student by using $match
-    { $match: { _id: ObjectId(userId) } },
-    {
-      $unwind: '$friends',
-    },
-    {
-      $group: {
-        _id: ObjectId(userId),
-        userName: $userName
-      },
-    },
-  ]);
+// const userFriends = async (userId) =>
+// 	User.aggregate([
+// 		{ $match: { _id: ObjectId(userId) } },
+// 		{
+// 			$unwind: '$friends',
+// 		},
+// 		{
+// 			$group: {
+// 				_id: ObjectId(userId),
+// 				userName: $userName,
+// 			},
+// 		},
+// 	]);
 
 module.exports = {
 	// `GET` all users
@@ -30,10 +29,7 @@ module.exports = {
 			.then(async (user) =>
 				!user
 					? res.status(404).json({ message: 'No user with that ID' })
-					: res.json({
-						user,
-						friends: await userFriends(req.params.userId)
-					})
+					: res.json(user)
 			)
 			.catch((err) => res.status(500).json(err));
 	},
@@ -45,30 +41,35 @@ module.exports = {
 	},
 	// `DELETE` to remove user by its `_id`
 	deleteUser(req, res) {
-		User.findOneAndRemove({ _id: req.params.userId })
-		.then((user) =>
-		  !user
-			? res.status(404).json({ message: 'User not found' })
-			: User.findOneAndUpdate(
-				{ friends: req.params.userId },
-				{ $pull: { friends: req.params.userId } },
-				{ new: true }
-			  )
-		).then((user) =>
-		!user
-		  ? res.status(404).json({ message: 'User not found' })
-		  : Thought.findOneAndUpdate(
-			  { thoughts: req.params.userId },
-			  { $pull: { thoughts: req.params.userId } },
-			  { new: true }
-			)
-		).catch((err) => {
-		  console.log(err);
-		  res.status(500).json(err);
-		});
+		User.findOneAndDelete({ _id: req.params.userId })
+			.then((user) => {
+				if (!user) {
+					res.status(404).json({ message: 'user not found' });
+				}
+				if (user.thoughts.length > 0) {
+					Thought.deleteMany({ _id: { $in: user.thoughts } });
+				}
+				return res.status(200).json({});
+			})
+			.catch((err) => {
+				console.log(err);
+				res.status(500).json(err);
+			});
 	},
-	//  `PUT` to update a user by its `_id` TODO:
-	updateUser(req, res) {},
+	//  `PUT` to update a user by its `_id`
+	updateUser(req, res) {
+		User.findOneAndUpdate(
+			{ _id: req.params.userId },
+			{ $set: req.body },
+			{ runValidators: true, new: true }
+		)
+			.then((user) =>
+				!user
+					? res.status(404).json({ message: 'No user found' })
+					: res.json(user)
+			)
+			.catch((err) => res.status(500).json(err));
+	},
 
 	// `POST` to add a new friend to a user's friend list
 	addFriend(req, res) {
@@ -76,29 +77,25 @@ module.exports = {
 			{ _id: req.params.userId },
 			{ $addToSet: { friends: req.body } },
 			{ runValidators: true, new: true }
-		  )
+		)
 			.then((user) =>
-			  !user
-				? res
-					.status(404)
-					.json({ message: 'No user found :(' })
-				: res.json(user)
+				!user
+					? res.status(404).json({ message: 'No user found :(' })
+					: res.json(user)
 			)
 			.catch((err) => res.status(500).json(err));
 	},
 	//  `DELETE` to remove a friend from a user's friend list
-	deleteFriend(req, res){
+	deleteFriend(req, res) {
 		User.findOneAndUpdate(
-		  { _id: req.params.userId },
-		  { $pull: { friends: { userId: req.params.friendId } } },
+			{ _id: req.params.userId },
+			{ $pull: { friends: { userId: req.params.friendId } } }
 		)
-		  .then((user) =>
-			!user
-			  ? res
-				  .status(404)
-				  .json({ message: 'No user found :(' })
-			  : res.json(user)
-		  )
-		  .catch((err) => res.status(500).json(err));
-	  }
+			.then((user) =>
+				!user
+					? res.status(404).json({ message: 'No user found :(' })
+					: res.json(user)
+			)
+			.catch((err) => res.status(500).json(err));
+	},
 };
